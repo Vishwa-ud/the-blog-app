@@ -1,0 +1,89 @@
+name: "Dependency Security Scan"
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 6 * * *'  # Run daily at 6 AM
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: 'Checkout Repository'
+        uses: actions/checkout@v4
+      - name: 'Dependency Review'
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          allow-licenses: MIT, Apache-2.0, BSD-3-Clause, ISC, BSD-2-Clause
+
+  npm-audit:
+    name: NPM Security Audit
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Backend NPM Audit
+      run: |
+        cd backend
+        npm audit --audit-level moderate --production
+        npm audit fix --force || true
+        
+    - name: Frontend NPM Audit
+      run: |
+        cd frontend
+        npm audit --audit-level moderate --production
+        npm audit fix --force || true
+        
+    - name: Generate audit report
+      run: |
+        cd backend
+        npm audit --json > ../backend-audit.json || true
+        cd ../frontend
+        npm audit --json > ../frontend-audit.json || true
+        
+    - name: Upload audit reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: audit-reports
+        path: |
+          backend-audit.json
+          frontend-audit.json
+
+  security-scan:
+    name: Advanced Security Scan
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Semgrep
+      uses: returntocorp/semgrep-action@v1
+      with:
+        config: >-
+          p/security-audit
+          p/secrets
+          p/owasp-top-ten
+          p/typescript
+          p/react
+          p/nodejs
+      env:
+        SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        
+    - name: Upload Semgrep results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: semgrep.sarif
+      continue-on-error: true
