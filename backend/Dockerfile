@@ -51,7 +51,7 @@ RUN npx prisma generate
 # Copy source code and build
 COPY --link tsconfig.json ./
 COPY --link src ./src/
-RUN npm run build
+RUN ./node_modules/.bin/tsc
 
 # Install only production dependencies for final image
 RUN npm ci --only=production --audit-level=high && \
