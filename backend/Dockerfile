@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1
 
 # Adjust NODE_VERSION as desired
-ARG NODE_VERSION=18.16.0
+ARG NODE_VERSION=18.18.0
 FROM node:${NODE_VERSION}-slim AS base
 
 LABEL fly_launch_runtime="Node.js/Prisma"
@@ -41,7 +41,7 @@ RUN apt-get update -qq && \
 COPY --link package-lock.json package.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci --audit-level=high && \
+RUN npm ci --timeout=300000 --audit-level=moderate && \
     npm cache clean --force
 
 # Copy Prisma schema and generate client
@@ -54,7 +54,7 @@ COPY --link src ./src/
 RUN ./node_modules/.bin/tsc
 
 # Install only production dependencies for final image
-RUN npm ci --only=production --audit-level=high && \
+RUN npm ci --only=production --timeout=300000 --audit-level=moderate && \
     npm cache clean --force
 
 # Final stage for app image
