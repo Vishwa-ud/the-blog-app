@@ -1,8 +1,7 @@
 # syntax = docker/dockerfile:1
 
-# Adjust NODE_VERSION as desired
-ARG NODE_VERSION=18.18.0
-FROM node:${NODE_VERSION}-slim AS base
+# Use Node.js 18 LTS
+FROM node:18-slim AS base
 
 LABEL fly_launch_runtime="Node.js/Prisma"
 LABEL maintainer="your-email@domain.com"
@@ -20,10 +19,7 @@ ENV NODE_ENV="production"
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 ENV NPM_CONFIG_FUND=false
 
-# Set security headers and configurations
-ENV NODE_OPTIONS="--max-old-space-size=1024"
-
-# Throw-away build stage to reduce size of final image
+# Build stage
 FROM base AS build
 
 # Install packages needed to build node modules
@@ -38,10 +34,10 @@ RUN apt-get update -qq && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 # Copy package files
-COPY --link package-lock.json package.json ./
+COPY --link package.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci --timeout=300000 --audit-level=moderate && \
+RUN npm install --timeout=300000 && \
     npm cache clean --force
 
 # Copy Prisma schema and generate client
@@ -51,11 +47,9 @@ RUN npx prisma generate
 # Copy source code and build
 COPY --link tsconfig.json ./
 COPY --link src ./src/
-RUN ./node_modules/.bin/tsc
 
-# Install only production dependencies for final image
-RUN npm ci --only=production --timeout=300000 --audit-level=moderate && \
-    npm cache clean --force
+# Build TypeScript
+RUN npm run build
 
 # Final stage for app image
 FROM base
@@ -69,11 +63,16 @@ RUN apt-get update -qq && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
+# Copy package.json for production install
+COPY --link package.json ./
+
+# Install only production dependencies
+RUN npm install --only=production --timeout=300000 && \
+    npm cache clean --force
+
 # Copy built application from build stage
-COPY --from=build --chown=nodejs:nodejs /app/node_modules /app/node_modules
 COPY --from=build --chown=nodejs:nodejs /app/dist /app/dist
-COPY --from=build --chown=nodejs:nodejs /app/package.json /app/package.json
-COPY --from=build --chown=nodejs:nodejs /app/prisma /app/prisma
+COPY --from=build --chown=nodejs:nodejs /app/node_modules/.prisma /app/node_modules/.prisma
 
 # Set correct ownership and permissions
 RUN chown -R nodejs:nodejs /app && \
