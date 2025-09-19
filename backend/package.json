@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "build": "tsc",
+        "build": "npx tsc",
         "server": "npx nodemon",
         "start": "NODE_ENV=prod node dist/index.js",
         "seed": "npm run build && node dist/seed.js",
@@ -18,8 +18,7 @@
         "express-validator": "^7.2.1",
         "jsonwebtoken": "^9.0.0",
         "multer": "^1.4.5-lts.1",
-        "prisma": "^5.1.1",
-        "typescript": "^5.1.6"
+        "prisma": "^5.1.1"
     },
     "devDependencies": {
         "@flydotio/dockerfile": "^0.4.7",

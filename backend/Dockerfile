@@ -48,6 +48,10 @@ RUN npx prisma generate
 COPY --link tsconfig.json ./
 COPY --link src ./src/
 
+# Debug: Check if TypeScript is installed
+RUN ls -la node_modules/.bin/ | grep -i tsc || echo "TypeScript binary not found"
+RUN npm list typescript || echo "TypeScript package not found"
+
 # Build TypeScript
 RUN npm run build
 
