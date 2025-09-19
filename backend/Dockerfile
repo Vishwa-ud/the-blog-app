@@ -38,6 +38,7 @@ COPY --link package.json ./
 
 # Install all dependencies (including dev dependencies for build)
 RUN npm install --timeout=300000 && \
+    npm install typescript@latest && \
     npm cache clean --force
 
 # Copy Prisma schema and generate client
@@ -52,8 +53,8 @@ COPY --link src ./src/
 RUN ls -la node_modules/.bin/ | grep -i tsc || echo "TypeScript binary not found"
 RUN npm list typescript || echo "TypeScript package not found"
 
-# Build TypeScript
-RUN npm run build
+# Build TypeScript using explicit path
+RUN ./node_modules/.bin/tsc
 
 # Final stage for app image
 FROM base
