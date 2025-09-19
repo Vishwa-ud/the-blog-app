@@ -2,7 +2,7 @@
 
 # Adjust NODE_VERSION as desired
 ARG NODE_VERSION=18.16.0
-FROM node:${NODE_VERSION}-slim as base
+FROM node:${NODE_VERSION}-slim AS base
 
 LABEL fly_launch_runtime="Node.js/Prisma"
 LABEL maintainer="your-email@domain.com"
@@ -24,7 +24,7 @@ ENV NPM_CONFIG_FUND=false
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 
 # Throw-away build stage to reduce size of final image
-FROM base as build
+FROM base AS build
 
 # Install packages needed to build node modules
 RUN apt-get update -qq && \
@@ -40,8 +40,8 @@ RUN apt-get update -qq && \
 # Copy package files
 COPY --link package-lock.json package.json ./
 
-# Install dependencies with security audit
-RUN npm ci --only=production --audit-level=high && \
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci --audit-level=high && \
     npm cache clean --force
 
 # Copy Prisma schema and generate client
@@ -51,7 +51,11 @@ RUN npx prisma generate
 # Copy source code and build
 COPY --link tsconfig.json ./
 COPY --link src ./src/
-RUN npx tsc
+RUN npm run build
+
+# Install only production dependencies for final image
+RUN npm ci --only=production --audit-level=high && \
+    npm cache clean --force
 
 # Final stage for app image
 FROM base
