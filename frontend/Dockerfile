@@ -7,6 +7,9 @@ ENV NPM_CONFIG_COLOR=false
 ENV CHOKIDAR_USEPOLLING=true
 ENV CHOKIDAR_INTERVAL=1000
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 # Install dependencies first for better caching
@@ -19,9 +22,9 @@ COPY . .
 # Expose Vite dev server port
 EXPOSE 5173
 
-# Health check
+# Health check (using HTTP for internal container communication)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:5173 || exit 1
+    CMD curl -f http://localhost:5173 || exit 1
 
 # Start development server with proper host binding
 CMD ["npm", "run", "dev"]
