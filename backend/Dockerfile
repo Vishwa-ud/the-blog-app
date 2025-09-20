@@ -1,30 +1,22 @@
-# syntax=docker/dockerfile:1
+# syntax = docker/dockerfile:1
 
-# Build stage
-FROM node:18-slim AS build
-WORKDIR /app
-
-# Install deps
-COPY package.json package-lock.json* ./
-RUN npm install
-
-# Copy source and build
-COPY tsconfig.json ./
-COPY src ./src/
-COPY prisma ./prisma/
-RUN npx prisma generate
-RUN npx tsc
-
-# Final image
+# Use Node.js 18 LTS slim
 FROM node:18-slim
+
+# Set working directory
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
-RUN npm install --only=production
+# Copy package files first (better layer caching)
+COPY package*.json ./
 
-# Copy build output + prisma client
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+# Install dependencies
+RUN npm install 
 
+# Copy application code
+COPY . .
+
+# Expose port 3000
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+
+# Start backend
+CMD ["npm", "start"]
