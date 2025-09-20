@@ -1,13 +1,28 @@
 version: '3.8'
 
-services: 
+services:
+  # Nginx reverse proxy
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - blog-network
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
       target: production
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://udeesha:ObuUxhAzY0qnAAr7Z57pBQ@lucid-grub-16179.j77.aws-ap-south-1.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full
@@ -15,9 +30,6 @@ services:
       - CLOUDINARY_API_KEY=937831317112348
       - CLOUDINARY_API_SECRET=hAk3NQxuG7jL3stvrtE4cbN8JIw
       - CLOUDINARY_CLOUD_NAME=dmeiyssiy
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
       - blog-network
     restart: unless-stopped
@@ -31,19 +43,16 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.prod
-    ports:
-      - "80:80"
-      - "443:443"
+      dockerfile: Dockerfile
+    expose:
+      - "5173"
     environment:
-      - VITE_API_URL=${API_URL:-http://localhost:3000}
+      - VITE_API_URL=https://localhost/api
     depends_on:
       - backend
     networks:
       - blog-network
     restart: unless-stopped
-    volumes:
-      - ./nginx/ssl:/etc/nginx/ssl:ro
 
 networks:
   blog-network:

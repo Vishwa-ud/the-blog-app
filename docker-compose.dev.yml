@@ -1,13 +1,27 @@
 version: '3.8'
 
 services:
+  # Nginx reverse proxy
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - blog-network
+    restart: unless-stopped
+
   # Backend API service
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:password@db:5432/blogapp?schema=public
