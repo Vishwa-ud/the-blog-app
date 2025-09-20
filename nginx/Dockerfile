@@ -26,6 +26,9 @@ RUN addgroup -g 101 -S nginx \
 # Expose ports
 EXPOSE 80 443
 
+# Switch to nginx user
+USER nginx
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost/health || exit 1

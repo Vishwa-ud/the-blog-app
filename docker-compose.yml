@@ -1,21 +1,6 @@
 version: '3.8'
 
 services:
-  # Nginx reverse proxy
-  nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - backend
-      - frontend
-    networks:
-      - blog-network
-    restart: unless-stopped
-
   # Backend API service
   backend:
     build:
@@ -79,22 +64,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis for caching (optional but recommended for production)
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - blog-network
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   # Nginx reverse proxy
   nginx:
