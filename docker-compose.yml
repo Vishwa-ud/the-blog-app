@@ -18,7 +18,7 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
-      - /app/dist
+     
     networks:
       - blog-network
     restart: unless-stopped
