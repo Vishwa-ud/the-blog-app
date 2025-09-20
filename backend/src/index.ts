@@ -23,11 +23,17 @@ const corsOptions = {
     origin: [
         "http://localhost:5173",
         "http://localhost:4173",
+        // Allow HTTPS origin when served via Nginx reverse proxy
+        "https://localhost",
         process.env.FRONTEND_SERVER_PROD || "",
     ],
     credentials: true,
 };
 app.use(cors(corsOptions));
+
+// If running behind a reverse proxy (Nginx) and you plan to use secure cookies,
+// trust the proxy so Express can correctly detect HTTPS
+app.set("trust proxy", 1);
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
