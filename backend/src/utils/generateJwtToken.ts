@@ -5,5 +5,5 @@ export const generateJwtToken = (
     TOKEN_SECRET: string,
     expiryTime: string,
 ) => {
-    return jwt.sign({ id: userId }, TOKEN_SECRET, { expiresIn: expiryTime });
+    return jwt.sign({ id: userId }, TOKEN_SECRET, { expiresIn: expiryTime as any });
 };

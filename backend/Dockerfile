@@ -1,22 +1,18 @@
-# syntax = docker/dockerfile:1
-
-# Use Node.js 18 LTS slim
 FROM node:18-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files first (better layer caching)
+# Copy only package files first (for caching)
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install 
+# Install dependencies (fast & deterministic)
+RUN npm ci --loglevel=error
 
-# Copy application code
+# Copy source code
 COPY . .
 
-# Expose port 3000
+# Expose port
 EXPOSE 3000
 
-# Start backend
+# Start app
 CMD ["npm", "start"]

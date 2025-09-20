@@ -40,7 +40,7 @@ app.use("/uploads/", express.static(path.join(process.cwd(), "/uploads/")));
 // Health check endpoint
 app.get("/health", (req, res) => {
     res.status(200).json({ 
-        status: "healthy", 
+        status: "healthy backend ekak bn", 
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || "development"
     });

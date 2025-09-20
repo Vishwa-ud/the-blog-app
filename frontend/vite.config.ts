@@ -45,8 +45,8 @@ export default defineConfig({
         port: 5173,
         strictPort: true,
         watch: {
-            usePolling: true,
-            interval: 1000,
+            usePolling: false,
+            ignored: ['**/*']  // Ignore all file changes in Docker
         },
     },
 });

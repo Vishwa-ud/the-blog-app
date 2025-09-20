@@ -1,52 +1,21 @@
 version: '3.8'
 
 services:
-  # Backend API service
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    expose:
-      - "3000"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://udeesha:ObuUxhAzY0qnAAr7Z57pBQ@lucid-grub-16179.j77.aws-ap-south-1.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full
-      - JWT_SECRET=SECRET
-      - CLOUDINARY_API_KEY=937831317112348
-      - CLOUDINARY_API_SECRET=hAk3NQxuG7jL3stvrtE4cbN8JIw
-      - CLOUDINARY_CLOUD_NAME=dmeiyssiy
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-     
-    networks:
-      - blog-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
   # Frontend service (for development)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    expose:
-      - "5173"
+    ports:
+      - "5173:5173"  # Expose frontend directly
     environment:
       - VITE_API_URL=https://localhost/api
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - CHOKIDAR_USEPOLLING=false
+      - WATCHPACK_POLLING=false
+
     networks:
       - blog-network
     restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5173"]
       interval: 30s
@@ -54,18 +23,15 @@ services:
       retries: 3
       start_period: 40s
 
-
   # Nginx reverse proxy
   nginx:
     build:
       context: ./nginx
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "8080:80"
       - "443:443"
     depends_on:
-      backend:
-        condition: service_healthy
       frontend:
         condition: service_healthy
     networks:
