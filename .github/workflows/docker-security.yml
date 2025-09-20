@@ -2,7 +2,7 @@ name: "Docker Security Scan"
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "main", "develop", "Feature/Udeesha" ]
     paths: 
       - 'backend/Dockerfile'
       - 'backend/**'
