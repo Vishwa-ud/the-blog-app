@@ -1,4 +1,7 @@
 import express from "express";
+import https from "https";
+import fs from "fs";
+import path from "path";
 import dotenv from "dotenv";
 dotenv.config({ path: "../.env" });
 import cors from "cors";
@@ -8,12 +11,12 @@ import postsRoutes from "./routes/posts";
 import authRoutes from "./routes/auth";
 import likesRoutes from "./routes/likes";
 import commentsRoutes from "./routes/comments";
-import path from "path";
 import { errorMiddleware } from "./middleware/errorMiddleware";
 import { v2 as cloudinary } from "cloudinary";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT || "5000");
+const HTTPS_PORT = parseInt(process.env.HTTPS_PORT || "5443");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -21,13 +24,15 @@ app.use(cookieParser());
 
 const corsOptions = {
     origin: [
-        "http://localhost:5173",
-        "http://localhost:4173",
-        // Allow HTTPS origin when served via Nginx reverse proxy
-        "https://localhost",
+        "http://localhost:5173",  // Frontend direct access
+        "http://localhost:4173",  // Frontend preview
+        "https://localhost",      // Nginx HTTPS proxy
+        "https://localhost:443",  // Explicit HTTPS port
         process.env.FRONTEND_SERVER_PROD || "",
     ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
 };
 app.use(cors(corsOptions));
 
@@ -59,6 +64,29 @@ app.use("/auth", authRoutes);
 app.use("/comments", commentsRoutes);
 app.use(errorMiddleware);
 
-app.listen({ address: "0.0.0.0", port: PORT }, () => {
-    console.log(`Server running on port: ${PORT}`);
+// HTTPS Configuration with error handling
+const sslKeyPath = path.join(__dirname, '../ssl/backend.key');
+const sslCertPath = path.join(__dirname, '../ssl/backend.crt');
+
+// Check if SSL certificates exist
+if (fs.existsSync(sslKeyPath) && fs.existsSync(sslCertPath)) {
+    const httpsOptions = {
+        key: fs.readFileSync(sslKeyPath),
+        cert: fs.readFileSync(sslCertPath)
+    };
+
+    // Start HTTPS server
+    const httpsServer = https.createServer(httpsOptions, app);
+    
+    httpsServer.listen(HTTPS_PORT, '0.0.0.0', () => {
+        console.log(`🔒 Backend HTTPS server running on port ${HTTPS_PORT}`);
+    });
+} else {
+    console.log(`⚠️  SSL certificates not found. HTTPS server not started.`);
+    console.log(`   Expected: ${sslKeyPath} and ${sslCertPath}`);
+}
+
+// Start HTTP server
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🌐 Backend HTTP server running on port ${PORT}`);
 });
