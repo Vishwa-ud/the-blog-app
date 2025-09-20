@@ -36,6 +36,16 @@ cloudinary.config({
 });
 
 app.use("/uploads/", express.static(path.join(process.cwd(), "/uploads/")));
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+    res.status(200).json({ 
+        status: "healthy", 
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || "development"
+    });
+});
+
 app.use("/posts", postsRoutes);
 app.use("/posts", likesRoutes);
 app.use("/users", usersRoutes);

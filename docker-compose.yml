@@ -15,8 +15,6 @@ services:
       - CLOUDINARY_API_KEY=937831317112348
       - CLOUDINARY_API_SECRET=hAk3NQxuG7jL3stvrtE4cbN8JIw
       - CLOUDINARY_CLOUD_NAME=dmeiyssiy
-    depends_on:
-      - db
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -24,6 +22,12 @@ services:
     networks:
       - blog-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Frontend service (for development)
   frontend:
@@ -41,28 +45,14 @@ services:
       - blog-network
     restart: unless-stopped
     depends_on:
-      - backend
-
-  # PostgreSQL database
-  db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=blogapp
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backend/prisma/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    networks:
-      - blog-network
-    restart: unless-stopped
+      backend:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 
   # Nginx reverse proxy
@@ -74,8 +64,10 @@ services:
       - "80:80"
       - "443:443"
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
     networks:
       - blog-network
     restart: unless-stopped
