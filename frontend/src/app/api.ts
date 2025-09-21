@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Force the correct base URL for development - HARDCODED FOR DEBUGGING
-const BASE_URL = "http://localhost/api";  // Updated to use nginx HTTP API
+const BASE_URL = "https://localhost/api";  // Updated to use nginx HTTP API
 
 console.log("🔧 API Base URL:", BASE_URL);
 console.log("🔧 Environment:", import.meta.env.MODE);
