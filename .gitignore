@@ -5,3 +5,4 @@ backend/uploads/
 dist/
 
 package-lock.json
+backend/logs/
