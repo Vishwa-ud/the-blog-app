@@ -21,8 +21,5 @@ RUN apt-get update -y && apt-get install -y openssl curl
 COPY --from=builder /app/node_modules /app/node_modules
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
-
 EXPOSE 5000
 CMD ["npm", "run", "server"]
