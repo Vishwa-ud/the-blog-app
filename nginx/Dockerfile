@@ -15,6 +15,9 @@ RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# Remove default configuration that conflicts with our setup
+RUN rm -f /etc/nginx/conf.d/default.conf
+
 # Set permissions for existing nginx user
 RUN chown -R nginx:nginx /var/cache/nginx \
     && chown -R nginx:nginx /var/log/nginx \
