@@ -5,9 +5,9 @@ on:
     - cron: '0 0 * * *'  # Daily at midnight
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [ main, Feature/Udeesha ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, Feature/Udeesha ]
 
 jobs:
   code-scanning:
