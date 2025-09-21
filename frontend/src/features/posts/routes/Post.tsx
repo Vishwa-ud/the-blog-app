@@ -29,6 +29,7 @@ const Post = () => {
             ) : (
                 <>
                     <RenderedPost
+                        id={post.id}
                         title={post.title}
                         content={post.content}
                         preview={post.preview}
