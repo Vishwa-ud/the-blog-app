@@ -12,6 +12,7 @@ import { convertToFormData } from "../../../utils/convertToFormData";
 import { Dispatch, SetStateAction } from "react";
 import { useMediaQuery, Theme } from "@mui/material";
 import { Spinner } from "../../../components/Elements/Spinner";
+import { GoogleLoginButton } from "./GoogleLoginButton";
 
 const signupFormSchema = yup.object({
     username: yup.string().required(),
@@ -184,6 +185,8 @@ export const SignupForm = (props: Props) => {
             >
                 Sign Up
             </Button>
+            
+            <GoogleLoginButton />
         </Box>
     );
 };
