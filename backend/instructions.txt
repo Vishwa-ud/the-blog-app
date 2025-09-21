@@ -1,1 +1,2 @@
 docker-compose exec backend npx prisma generate
+if backend is running on local machine not on a docker container->host.docker.internal:5000
