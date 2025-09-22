@@ -13,12 +13,18 @@ export const register = async (
     res: Response,
     next: NextFunction,
 ) => {
+    logger.info("Register endpoint hit", { endpoint: "/register", method: "POST" });
     const registeringUser = req.body;
     if (
         !registeringUser.username ||
         !registeringUser.password ||
         !registeringUser.fullName
     ) {
+        logger.warn("Validation failed: Missing required fields", {
+            endpoint: "/register",
+            method: "POST",
+            body: registeringUser,
+        });
         return res
             .status(400)
             .json({
@@ -32,6 +38,11 @@ export const register = async (
         },
     });
     if (existingUser) {
+        logger.warn("Registration failed: Username already exists", {
+            endpoint: "/register",
+            method: "POST",
+            username: registeringUser.username,
+        });
         return res
             .status(409)
             .json({ message: "User with the given username already exists." });
@@ -58,8 +69,18 @@ export const register = async (
             sameSite: "none",
             maxAge: 24 * 60 * 60 * 1000,
         });
+        logger.info("User registered successfully", {
+            endpoint: "/register",
+            method: "POST",
+            userId: newUser.id,
+        });
         res.status(201).json({ user: newUser });
     } catch (error) {
+        logger.error("Error during user registration", {
+            endpoint: "/register",
+            method: "POST",
+            error,
+        });
         next({
             error,
             message: "Unable to sign up the user with given credentials.",
@@ -72,9 +93,15 @@ export const login = async (
     res: Response,
     next: NextFunction,
 ) => {
+    logger.info("Login endpoint hit", { endpoint: "/login", method: "POST" });
     try {
         const { username, password: userPassword } = req.body;
         if (!username || !userPassword) {
+            logger.warn("Validation failed: Missing username or password", {
+                endpoint: "/login",
+                method: "POST",
+                body: req.body,
+            });
             return res
                 .status(400)
                 .json({ message: "Username and password are required." });
@@ -86,6 +113,11 @@ export const login = async (
             },
         });
         if (!user) {
+            logger.warn("Login failed: Invalid username", {
+                endpoint: "/login",
+                method: "POST",
+                username,
+            });
             return res.status(404).json({ message: "Invalid username." });
         }
 
@@ -105,6 +137,11 @@ export const login = async (
             user.password,
         );
         if (!isPasswordCorrect) {
+            logger.warn("Login failed: Invalid password", {
+                endpoint: "/login",
+                method: "POST",
+                username,
+            });
             return res.status(400).json({ message: "Invalid password." });
         }
 
@@ -120,8 +157,18 @@ export const login = async (
             sameSite: "none",
             maxAge: 24 * 60 * 60 * 1000,
         });
+        logger.info("User logged in successfully", {
+            endpoint: "/login",
+            method: "POST",
+            userId: user.id,
+        });
         res.status(200).json({ user: userWithoutPassword });
     } catch (error) {
+        logger.error("Error during user login", {
+            endpoint: "/login",
+            method: "POST",
+            error,
+        });
         next({
             error,
             message: "Unable to authenticate the user with given credentials.",
@@ -134,9 +181,14 @@ export const logout = async (
     res: Response,
     next: NextFunction,
 ) => {
+    logger.info("Logout endpoint hit", { endpoint: "/logout", method: "GET" });
     try {
         const cookies = req.cookies;
         if (!cookies?.jwt) {
+            logger.info("No JWT token found during logout", {
+                endpoint: "/logout",
+                method: "GET",
+            });
             return res.sendStatus(204);
         }
 
@@ -145,8 +197,17 @@ export const logout = async (
             sameSite: "none",
             secure: true,
         });
+        logger.info("User logged out successfully", {
+            endpoint: "/logout",
+            method: "GET",
+        });
         res.sendStatus(204);
     } catch (error) {
+        logger.error("Error during user logout", {
+            endpoint: "/logout",
+            method: "GET",
+            error,
+        });
         next({ error, message: "Unable to logout" });
     }
 };

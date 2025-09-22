@@ -2,8 +2,13 @@ import { login, register, logout, googleLogin, refreshToken } from "../controlle
 import { upload } from "../middleware/multerMiddleware";
 import express from "express";
 import { fileUploadMiddleware } from "../middleware/fileUploadMiddleware";
+import { morganMiddleware } from "../middleware/loggerMiddleware";
 
 const router = express.Router();
+
+// Apply morgan middleware for logging
+router.use(morganMiddleware);
+
 router.post(
     "/register",
     upload.single("avatar"),
