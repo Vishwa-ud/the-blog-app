@@ -6,6 +6,7 @@ import Stack from "@mui/material/Stack";
 import EditIcon from "@mui/icons-material/Edit";
 import { Dispatch, SetStateAction } from "react";
 import remarkGfm from "remark-gfm";
+import SafeText from "../../../components/Security/SafeText";
 
 interface IRenderedPostProps extends Partial<IPost> {
     isEdit?: boolean;
@@ -37,14 +38,14 @@ const RenderedPost = (props: IRenderedPostProps) => {
                 justifyContent="space-between"
                 py={3}
             >
-                <Typography
+                <SafeText
                     variant="h1"
                     sx={{
                         fontWeight: "600",
                     }}
                 >
                     {props.title}
-                </Typography>
+                </SafeText>
                 {props?.isEditAllowed && !props?.isEdit && (
                     <Button
                         variant="text"
@@ -64,7 +65,7 @@ const RenderedPost = (props: IRenderedPostProps) => {
                     </Button>
                 )}
             </Stack>
-            <Typography
+            <SafeText
                 variant="body1"
                 sx={{
                     fontWeight: "500",
@@ -73,7 +74,7 @@ const RenderedPost = (props: IRenderedPostProps) => {
                 }}
             >
                 {props.preview}
-            </Typography>
+            </SafeText>
             <ReactMarkdown
                 components={{
                     p: ({ node, ...props }) => (

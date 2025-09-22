@@ -3,6 +3,7 @@ import { CustomContainer } from "../../../components/Layout/CustomContainer";
 import PostFeed from "../../posts/components/PostFeed";
 import Header from "../../../components/Layout/Header";
 import { Typography } from "@mui/material";
+import SafeText from "../../../components/Security/SafeText";
 
 const Home = () => {
     return (
@@ -17,7 +18,7 @@ const Home = () => {
                     padding: "20px 0",
                 })}
             >
-                <Typography
+                <SafeText
                     variant="h3"
                     sx={{
                         fontWeight: "600",
@@ -25,7 +26,7 @@ const Home = () => {
                     }}
                 >
                     Latest posts
-                </Typography>
+                </SafeText>
                 <PostFeed />
             </Box>
         </CustomContainer>

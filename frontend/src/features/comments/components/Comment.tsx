@@ -4,6 +4,7 @@ import Stack from "@mui/material/Stack";
 import { formatDate } from "../../../utils/formatDate";
 import defaultAvatar from "../../../assets/images/default_avatar.webp";
 import { Link } from "react-router-dom";
+import SafeText from "../../../components/Security/SafeText";
 
 export const Comment = (props: IComment) => {
     return (
@@ -21,7 +22,7 @@ export const Comment = (props: IComment) => {
             />
             <Box>
                 <Stack direction="row" spacing={1}>
-                    <Typography
+                    <SafeText
                         variant="body2"
                         sx={{
                             fontWeight: 700,
@@ -33,8 +34,8 @@ export const Comment = (props: IComment) => {
                         >
                             {props.author.username}
                         </Link>
-                    </Typography>
-                    <Typography
+                    </SafeText>
+                    <SafeText
                         variant="body2"
                         sx={{
                             fontWeight: 500,
@@ -42,9 +43,9 @@ export const Comment = (props: IComment) => {
                         }}
                     >
                         {formatDate(props.updatedAt)}
-                    </Typography>
+                    </SafeText>
                 </Stack>
-                <Typography
+                <SafeText
                     variant="body1"
                     sx={(theme) => ({
                         [theme.breakpoints.down("sm")]: {
@@ -53,7 +54,7 @@ export const Comment = (props: IComment) => {
                     })}
                 >
                     {props.content}
-                </Typography>
+                </SafeText>
             </Box>
         </Stack>
     );

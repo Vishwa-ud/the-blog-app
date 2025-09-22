@@ -16,6 +16,7 @@ import { Theme, useMediaQuery } from "@mui/material";
 import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../auth/slices/authSlice";
+import SafeText from "../../../components/Security/SafeText";
 
 const PostPreview = (props: IPost) => {
     const navigate = useNavigate();
@@ -101,24 +102,24 @@ const PostPreview = (props: IPost) => {
                             flexShrink: 0,
                         }}
                     >
-                        <Typography
+                        <SafeText
                             variant="body2"
                             sx={{
                                 fontWeight: 600,
                             }}
                         >
                             {props.author.fullName}
-                        </Typography>
+                        </SafeText>
                     </Box>
                     <Box sx={{ px: 0.5 }}>•</Box>
-                    <Typography
+                    <SafeText
                         variant="body2"
                         sx={{
                             fontWeight: 600,
                         }}
                     >
                         {formatDate(props.createdAt)}
-                    </Typography>
+                    </SafeText>
                 </Box>
                 <Stack
                     direction="row"
@@ -162,7 +163,7 @@ const PostPreview = (props: IPost) => {
                         />
                     </Box>
                 </Stack>
-                <Typography
+                <SafeText
                     variant="body1"
                     sx={{
                         marginBottom: { xs: 1, md: 2 },
@@ -171,7 +172,7 @@ const PostPreview = (props: IPost) => {
                     }}
                 >
                     {props.preview}
-                </Typography>
+                </SafeText>
                 <Stack
                     direction="row"
                     spacing={{ xs: 0, md: 1 }}
