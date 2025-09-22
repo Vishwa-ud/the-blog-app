@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 dotenv.config({ path: "../.env" });
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import helmet from "helmet";
 import usersRoutes from "./routes/users";
 import postsRoutes from "./routes/posts";
 import authRoutes from "./routes/auth";
@@ -13,13 +14,47 @@ import likesRoutes from "./routes/likes";
 import commentsRoutes from "./routes/comments";
 import { errorMiddleware } from "./middleware/errorMiddleware";
 import { v2 as cloudinary } from "cloudinary";
+import { 
+    generalRateLimit, 
+    authRateLimit, 
+    uploadRateLimit,
+    readPostsRateLimit 
+} from "./middleware/rateLimitMiddleware";
+import { 
+    speedLimiter, 
+    ddosProtection, 
+    requestSizeLimit 
+} from "./middleware/ddosProtectionMiddleware";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "5000");
 const HTTPS_PORT = parseInt(process.env.HTTPS_PORT || "5443");
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Security middleware - Apply helmet first
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:"],
+        },
+    },
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    }
+}));
+
+// DDoS protection middleware
+app.use(ddosProtection);
+app.use(requestSizeLimit);
+app.use(speedLimiter);
+
+// Basic middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 const corsOptions = {
@@ -48,7 +83,10 @@ cloudinary.config({
 
 app.use("/uploads/", express.static(path.join(process.cwd(), "/uploads/")));
 
-// Health check endpoint
+// Apply general rate limiting to all routes (generous limits)
+app.use(generalRateLimit);
+
+// Health check endpoint with no additional rate limiting (handled by nginx)
 app.get("/health", (req, res) => {
     res.status(200).json({ 
         status: "healthy backend ekak bn", 
@@ -57,10 +95,19 @@ app.get("/health", (req, res) => {
     });
 });
 
-app.use("/posts", postsRoutes);
+// Routes with specific rate limiting based on HTTP method
+app.use("/posts", (req, res, next) => {
+    // Apply upload rate limit for creating/updating posts
+    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+        return uploadRateLimit(req, res, next);
+    }
+    // Apply read rate limit for reading posts
+    return readPostsRateLimit(req, res, next);
+}, postsRoutes);
+
 app.use("/posts", likesRoutes);
 app.use("/users", usersRoutes);
-app.use("/auth", authRoutes);
+app.use("/auth", authRateLimit, authRoutes);
 app.use("/comments", commentsRoutes);
 app.use(errorMiddleware);
 
