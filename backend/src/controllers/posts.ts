@@ -126,6 +126,28 @@ export const deletePost = async (
     next: NextFunction,
 ) => {
     try {
+        // First, check if the post exists and get its author
+        const existingPost = await prisma.post.findUnique({
+            where: {
+                id: req.params.id,
+            },
+            select: {
+                id: true,
+                authorId: true,
+            },
+        });
+
+        if (!existingPost) {
+            return res.status(404).json({ message: "Post not found." });
+        }
+
+        // Check if the current user is the author of the post
+        if (existingPost.authorId !== req.user?.id) {
+            return res.status(403).json({ 
+                message: "Forbidden: You can only delete your own posts." 
+            });
+        }
+
         const deletingPost = await prisma.post.delete({
             where: {
                 id: req.params.id,

@@ -1,4 +1,4 @@
-import { login, register, logout } from "../controllers/auth";
+import { login, register, logout, googleLogin, refreshToken } from "../controllers/auth";
 import { upload } from "../middleware/multerMiddleware";
 import express from "express";
 import { fileUploadMiddleware } from "../middleware/fileUploadMiddleware";
@@ -16,6 +16,8 @@ router.post(
     register,
 );
 router.post("/login", login);
+router.post("/google-login", googleLogin);
+router.post("/refresh-token", refreshToken);
 router.get("/logout", logout);
 
 export default router;

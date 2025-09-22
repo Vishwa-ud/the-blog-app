@@ -2,7 +2,7 @@ name: "Dependency Security Scan"
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "main", "develop", "Feature/Udeesha" ]
   pull_request:
     branches: [ "main" ]
   schedule:

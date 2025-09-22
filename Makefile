@@ -11,7 +11,8 @@ help: ## Show this help message
 dev: ## Start development environment
 	docker-compose -f docker-compose.dev.yml up -d
 	@echo "🚀 Development environment started!"
-	@echo "Backend: http://localhost:3000"
+	@echo "Application: https://localhost (with Nginx)"
+	@echo "Backend API: https://localhost/api"
 	@echo "Database: localhost:5432"
 
 dev-build: ## Build and start development environment
@@ -27,6 +28,7 @@ dev-stop: ## Stop development environment
 prod: ## Start production environment
 	docker-compose -f docker-compose.prod.yml up -d
 	@echo "🚀 Production environment started!"
+	@echo "Application: https://localhost (with Nginx)"
 
 prod-build: ## Build and start production environment
 	docker-compose -f docker-compose.prod.yml up -d --build
@@ -41,8 +43,8 @@ prod-stop: ## Stop production environment
 full: ## Start full stack environment
 	docker-compose up -d
 	@echo "🚀 Full stack environment started!"
-	@echo "Frontend: http://localhost"
-	@echo "Backend: http://localhost:3000"
+	@echo "Application: https://localhost (with Nginx)"
+	@echo "Backend API: https://localhost/api"
 
 full-build: ## Build and start full stack environment
 	docker-compose up -d --build
