@@ -6,6 +6,7 @@ import { useLoginMutation } from "../api/login";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useMediaQuery, Theme } from "@mui/material";
+import { GoogleLoginButton } from "./GoogleLoginButton";
 
 const loginFormSchema = yup.object({
     username: yup.string().required("Username is required"),
@@ -86,6 +87,8 @@ export const LoginForm = () => {
             >
                 Login
             </Button>
+            
+            <GoogleLoginButton />
         </Box>
     );
 };

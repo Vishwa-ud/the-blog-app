@@ -1,0 +1,1 @@
+2025-09-20T12:43:02.413Z [INFO]: ::1 - - [20/Sep/2025:12:43:02 +0000] "POST /auth/register HTTP/1.1" 500 33 "-" "PostmanRuntime/7.46.1"

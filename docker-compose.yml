@@ -1,13 +1,28 @@
 version: '3.8'
 
 services:
+  # Nginx reverse proxy
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - blog-network
+    restart: unless-stopped
+
   # Backend API service
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://udeesha:ObuUxhAzY0qnAAr7Z57pBQ@lucid-grub-16179.j77.aws-ap-south-1.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full
@@ -24,21 +39,16 @@ services:
     networks:
       - blog-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # Frontend service (for development)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    ports:
-      - "5173:5173"
+    expose:
+      - "5173"
     environment:
-      - VITE_API_URL=http://localhost:3000
+      - VITE_API_URL=https://localhost/api
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -86,15 +96,14 @@ services:
       timeout: 5s
       retries: 3
 
-  # Nginx reverse proxy (for production-like setup)
+  # Nginx reverse proxy
   nginx:
-    image: nginx:alpine
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - backend
       - frontend

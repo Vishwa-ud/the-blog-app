@@ -1,19 +1,30 @@
 import bcrypt from "bcryptjs";
 import { NextFunction, Request, Response } from "express";
 import { generateJwtToken } from "../utils/generateJwtToken";
+import { generateTokenPair } from "../utils/tokenUtils";
 import prisma from "../config/prisma";
+import { OAuth2Client } from "google-auth-library";
+import jwt, { JwtPayload } from "jsonwebtoken";
+
+const client = new OAuth2Client(process.env.AUTH_GOOGLE_ID);
 
 export const register = async (
     req: Request,
     res: Response,
     next: NextFunction,
 ) => {
+    logger.info("Register endpoint hit", { endpoint: "/register", method: "POST" });
     const registeringUser = req.body;
     if (
         !registeringUser.username ||
         !registeringUser.password ||
         !registeringUser.fullName
     ) {
+        logger.warn("Validation failed: Missing required fields", {
+            endpoint: "/register",
+            method: "POST",
+            body: registeringUser,
+        });
         return res
             .status(400)
             .json({
@@ -27,6 +38,11 @@ export const register = async (
         },
     });
     if (existingUser) {
+        logger.warn("Registration failed: Username already exists", {
+            endpoint: "/register",
+            method: "POST",
+            username: registeringUser.username,
+        });
         return res
             .status(409)
             .json({ message: "User with the given username already exists." });
@@ -53,8 +69,18 @@ export const register = async (
             sameSite: "none",
             maxAge: 24 * 60 * 60 * 1000,
         });
+        logger.info("User registered successfully", {
+            endpoint: "/register",
+            method: "POST",
+            userId: newUser.id,
+        });
         res.status(201).json({ user: newUser });
     } catch (error) {
+        logger.error("Error during user registration", {
+            endpoint: "/register",
+            method: "POST",
+            error,
+        });
         next({
             error,
             message: "Unable to sign up the user with given credentials.",
@@ -67,9 +93,15 @@ export const login = async (
     res: Response,
     next: NextFunction,
 ) => {
+    logger.info("Login endpoint hit", { endpoint: "/login", method: "POST" });
     try {
         const { username, password: userPassword } = req.body;
         if (!username || !userPassword) {
+            logger.warn("Validation failed: Missing username or password", {
+                endpoint: "/login",
+                method: "POST",
+                body: req.body,
+            });
             return res
                 .status(400)
                 .json({ message: "Username and password are required." });
@@ -81,7 +113,23 @@ export const login = async (
             },
         });
         if (!user) {
+            logger.warn("Login failed: Invalid username", {
+                endpoint: "/login",
+                method: "POST",
+                username,
+            });
             return res.status(404).json({ message: "Invalid username." });
+        }
+
+        // Check if this is a Google user trying to log in with password
+        if (user.isGoogleUser && !user.password) {
+            return res.status(400).json({ 
+                message: "This account is linked to Google. Please use Google Sign-In." 
+            });
+        }
+
+        if (!user.password) {
+            return res.status(400).json({ message: "Invalid password." });
         }
 
         const isPasswordCorrect = await bcrypt.compare(
@@ -89,6 +137,11 @@ export const login = async (
             user.password,
         );
         if (!isPasswordCorrect) {
+            logger.warn("Login failed: Invalid password", {
+                endpoint: "/login",
+                method: "POST",
+                username,
+            });
             return res.status(400).json({ message: "Invalid password." });
         }
 
@@ -104,8 +157,18 @@ export const login = async (
             sameSite: "none",
             maxAge: 24 * 60 * 60 * 1000,
         });
+        logger.info("User logged in successfully", {
+            endpoint: "/login",
+            method: "POST",
+            userId: user.id,
+        });
         res.status(200).json({ user: userWithoutPassword });
     } catch (error) {
+        logger.error("Error during user login", {
+            endpoint: "/login",
+            method: "POST",
+            error,
+        });
         next({
             error,
             message: "Unable to authenticate the user with given credentials.",
@@ -118,9 +181,14 @@ export const logout = async (
     res: Response,
     next: NextFunction,
 ) => {
+    logger.info("Logout endpoint hit", { endpoint: "/logout", method: "GET" });
     try {
         const cookies = req.cookies;
         if (!cookies?.jwt) {
+            logger.info("No JWT token found during logout", {
+                endpoint: "/logout",
+                method: "GET",
+            });
             return res.sendStatus(204);
         }
 
@@ -129,8 +197,163 @@ export const logout = async (
             sameSite: "none",
             secure: true,
         });
+        logger.info("User logged out successfully", {
+            endpoint: "/logout",
+            method: "GET",
+        });
         res.sendStatus(204);
     } catch (error) {
+        logger.error("Error during user logout", {
+            endpoint: "/logout",
+            method: "GET",
+            error,
+        });
         next({ error, message: "Unable to logout" });
+    }
+};
+
+export const googleLogin = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+) => {
+    try {
+        const { credential } = req.body;
+
+        if (!credential) {
+            return res
+                .status(400)
+                .json({ message: "Google credential is required." });
+        }
+
+        // Verify the Google token
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.AUTH_GOOGLE_ID,
+        });
+
+        const payload = ticket.getPayload();
+        if (!payload) {
+            return res.status(400).json({ message: "Invalid Google token." });
+        }
+
+        const { sub: googleId, email, name, picture } = payload;
+
+        if (!googleId || !email || !name) {
+            return res
+                .status(400)
+                .json({ message: "Invalid Google user data." });
+        }
+
+        // Check if user already exists
+        let user = await prisma.user.findFirst({
+            where: {
+                OR: [{ googleId }, { email }],
+            },
+        });
+
+        if (user) {
+            // Update existing user with Google info if needed
+            if (!user.googleId) {
+                user = await prisma.user.update({
+                    where: { id: user.id },
+                    data: {
+                        googleId,
+                        isGoogleUser: true,
+                        avatar: picture || user.avatar,
+                    },
+                });
+            }
+        } else {
+            // Create new user
+            user = await prisma.user.create({
+                data: {
+                    googleId,
+                    email,
+                    fullName: name,
+                    username: email, // Use email as username for Google users
+                    avatar: picture,
+                    isGoogleUser: true,
+                    bio: "",
+                },
+            });
+        }
+
+        // Generate JWT token
+        const token = generateJwtToken(
+            user.id,
+            process.env.TOKEN_SECRET || "",
+            "1d",
+        );
+
+        // Set cookie and return user data
+        res.cookie("jwt", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 24 * 60 * 60 * 1000,
+        });
+
+        const { password, ...userWithoutPassword } = user;
+        res.status(200).json({ user: userWithoutPassword });
+    } catch (error) {
+        console.error("Google login error:", error);
+        next({
+            error,
+            message: "Unable to authenticate with Google.",
+        });
+    }
+};
+
+export const refreshToken = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+) => {
+    try {
+        const token = req.cookies.jwt;
+        if (!token) {
+            return res.status(401).json({ message: "Refresh token is required." });
+        }
+
+        // Verify the refresh token
+        const decoded = jwt.verify(token, process.env.TOKEN_SECRET || "") as JwtPayload;
+        
+        if (decoded.type !== 'refresh') {
+            return res.status(401).json({ message: "Invalid token type." });
+        }
+
+        // Find the user
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.id },
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        // Generate new token pair
+        const { accessToken, refreshToken: newRefreshToken } = generateTokenPair(user.id);
+        
+        // Set new refresh token in cookie
+        res.cookie("jwt", newRefreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
+        // Return access token and user data
+        const { password, ...userWithoutPassword } = user;
+        res.status(200).json({ 
+            accessToken,
+            user: userWithoutPassword 
+        });
+    } catch (error) {
+        console.error("Refresh token error:", error);
+        next({
+            error,
+            message: "Unable to refresh token.",
+        });
     }
 };
