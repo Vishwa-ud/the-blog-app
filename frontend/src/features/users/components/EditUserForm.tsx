@@ -14,6 +14,7 @@ import * as yup from "yup";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { Spinner } from "../../../components/Elements/Spinner";
 import { useUpdateUserMutation } from "../api/updateUser";
+import SafeText from "../../../components/Security/SafeText";
 
 type Props = {
     user: IUser;
@@ -106,13 +107,13 @@ export const EditUserForm = (props: Props) => {
                             },
                         }}
                     />
-                    <Typography
+                    <SafeText
                         color="error"
                         variant="body1"
                         sx={{ fontWeight: 500, pb: 1 }}
                     >
                         {errors.firstName?.message}
-                    </Typography>
+                    </SafeText>
                     <TextField
                         {...register("lastName")}
                         fullWidth
@@ -127,13 +128,13 @@ export const EditUserForm = (props: Props) => {
                             },
                         }}
                     />
-                    <Typography
+                    <SafeText
                         color="error"
                         variant="body1"
                         sx={{ fontWeight: 500, pb: 1 }}
                     >
                         {errors.lastName?.message}
-                    </Typography>
+                    </SafeText>
                     <TextField
                         {...register("username")}
                         type="text"
@@ -148,13 +149,13 @@ export const EditUserForm = (props: Props) => {
                             },
                         }}
                     />
-                    <Typography
+                    <SafeText
                         color="error"
                         variant="body1"
                         sx={{ fontWeight: 500, pb: 1 }}
                     >
                         {errors.username?.message}
-                    </Typography>
+                    </SafeText>
                     <TextField
                         {...register("bio")}
                         type="text"
@@ -171,13 +172,13 @@ export const EditUserForm = (props: Props) => {
                             },
                         }}
                     />
-                    <Typography
+                    <SafeText
                         color="error"
                         variant="body1"
                         sx={{ fontWeight: 500, pb: 1 }}
                     >
                         {errors.bio?.message}
-                    </Typography>
+                    </SafeText>
                     <Button
                         variant="outlined"
                         component="label"

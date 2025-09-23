@@ -7,6 +7,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Dispatch, SetStateAction, useState } from "react";
 import remarkGfm from "remark-gfm";
+import SafeText from "../../../components/Security/SafeText";
 import { useDeletePostMutation } from "../api/deletePost";
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 
@@ -58,14 +59,14 @@ const RenderedPost = (props: IRenderedPostProps) => {
                 justifyContent="space-between"
                 py={3}
             >
-                <Typography
+                <SafeText
                     variant="h1"
                     sx={{
                         fontWeight: "600",
                     }}
                 >
                     {props.title}
-                </Typography>
+                </SafeText>
                 {props?.isEditAllowed && !props?.isEdit && (
                     <Stack direction="row" spacing={1}>
                         <Button
@@ -100,7 +101,7 @@ const RenderedPost = (props: IRenderedPostProps) => {
                     </Stack>
                 )}
             </Stack>
-            <Typography
+            <SafeText
                 variant="body1"
                 sx={{
                     fontWeight: "500",
@@ -109,7 +110,7 @@ const RenderedPost = (props: IRenderedPostProps) => {
                 }}
             >
                 {props.preview}
-            </Typography>
+            </SafeText>
             <ReactMarkdown
                 components={{
                     p: ({ node, ...props }) => (

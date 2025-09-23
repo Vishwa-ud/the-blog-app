@@ -5,6 +5,7 @@ import Stack from "@mui/material/Stack";
 import { usePostCommentsQuery } from "../api/getPostComments";
 import { sortCommentsByDate } from "../../../utils/sortByDate";
 import CommentForm from "./CommentForm";
+import SafeText from "../../../components/Security/SafeText";
 
 export const CommentSection = (props: { postId: string }) => {
     const { data: postComments, isSuccess } = usePostCommentsQuery(
@@ -16,9 +17,9 @@ export const CommentSection = (props: { postId: string }) => {
 
     return (
         <Box mt={5}>
-            <Typography variant="body1" fontWeight={600} mb={2}>
+            <SafeText variant="body1" fontWeight={600} mb={2}>
                 {postComments.length} comments
-            </Typography>
+            </SafeText>
             <CommentForm postId={props.postId} />
             <Stack spacing={3} pt={1} mb={2}>
                 {sortCommentsByDate(postComments).map((comment: IComment) => (

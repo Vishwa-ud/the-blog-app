@@ -16,6 +16,7 @@ import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../auth/slices/authSlice";
 import { useUpdatePostMutation } from "../api/updatePost";
 import { useNavigate } from "react-router-dom";
+import SafeText from "../../../components/Security/SafeText";
 
 interface IPostFormProps extends Partial<IPost> {
     setTitle: Dispatch<SetStateAction<string>>;
@@ -187,13 +188,13 @@ export const PostForm = (props: IPostFormProps) => {
                 }}
                 onChange={(e) => props.setContent(e.target.value)}
             />
-            <Typography
+            <TextField
                 color="error"
                 variant="body1"
                 sx={{ fontWeight: 500, pb: 1 }}
             >
                 {errors.content?.message}
-            </Typography>
+            </TextField>
             <Stack direction="row" spacing={2} alignItems="center">
                 <Button
                     variant="text"
@@ -221,13 +222,13 @@ export const PostForm = (props: IPostFormProps) => {
                     Publish
                 </Button>
             </Stack>
-            <Typography
+            <SafeText
                 color="error"
                 variant="body1"
                 sx={{ fontWeight: 500, pb: 1 }}
             >
                 {errors.postImg?.message}
-            </Typography>
+            </SafeText>
         </Box>
     );
 };

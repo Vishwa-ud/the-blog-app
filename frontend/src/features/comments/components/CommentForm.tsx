@@ -9,6 +9,7 @@ import defaultAvatar from "../../../assets/images/default_avatar.webp";
 import AddCommentIcon from "@mui/icons-material/AddComment";
 import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
+import SafeText from "../../../components/Security/SafeText";
 
 type Props = {
     postId: string;

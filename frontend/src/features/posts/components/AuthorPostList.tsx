@@ -5,6 +5,7 @@ import PostPreview from "./PostPreview";
 import { Typography } from "@mui/material";
 import { Link } from "react-router-dom";
 import Grid from "@mui/material/Grid";
+import SafeText from "../../../components/Security/SafeText";
 
 const AuthorPostList = ({ userProfileId }: { userProfileId: string }) => {
     const {
@@ -32,7 +33,7 @@ const AuthorPostList = ({ userProfileId }: { userProfileId: string }) => {
                     ))}
                 </Grid>
             ) : (
-                <Typography
+                <SafeText
                     variant="h2"
                     sx={(theme) => ({
                         [theme.breakpoints.down("md")]: {
@@ -47,7 +48,7 @@ const AuthorPostList = ({ userProfileId }: { userProfileId: string }) => {
                     >
                         Start writing now!
                     </Link>
-                </Typography>
+                </SafeText>
             )}
         </>
     );
