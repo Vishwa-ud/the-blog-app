@@ -64,16 +64,6 @@ const corsOptions: CorsOptions = {
 };
 app.use(cors(corsOptions));
 
-
-//Use rate limiter for brute-force protection(A05)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: "Too many attempts, try again later.",
-});
-
-app.use("/auth", authLimiter);
-
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
