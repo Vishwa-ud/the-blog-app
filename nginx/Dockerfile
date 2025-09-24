@@ -29,9 +29,9 @@ RUN chown -R nginx:nginx /var/cache/nginx \
 # Expose ports
 EXPOSE 80 443
 
-# Health check (using wget since it's more lightweight)
+# Health check (check nginx itself, not backend)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
+    CMD nginx -t || exit 1
 
 # Switch to nginx user
 USER nginx

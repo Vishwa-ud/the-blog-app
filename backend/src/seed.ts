@@ -1,4 +1,5 @@
 import prisma from "./config/prisma";
+import bcrypt from "bcryptjs";
 import {
     randUser,
     randPost,
@@ -15,7 +16,19 @@ const deleteAll = async () => {
 };
 
 const seed = async () => {
-    const usersNumber = 50;
+    // Create demo user first
+    const demoUserPassword = await bcrypt.hash("Password@123", 10);
+    const demoUser = await prisma.user.create({
+        data: {
+            username: "bobsmith",
+            password: demoUserPassword,
+            bio: "Demo user for testing the blog application.",
+            avatar: "https://via.placeholder.com/150/0000FF/808080?text=Demo+User",
+            fullName: "Bob Smith",
+        },
+    });
+    
+    const usersNumber = 49; // Reduced by 1 since we created the demo user
     const usersData = randUser({ length: usersNumber }).map((user) => ({
         username: user.username,
         password: randPassword(),
