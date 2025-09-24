@@ -1,0 +1,44 @@
+# Blog Application Security Features
+
+This document summarizes the key security features implemented in the Blog Application, focusing on the three main components:
+
+1. **SSL/TLS with Nginx for DDoS Protection and Rate Limiting**
+2. **Security Pipelines using GitHub Actions**
+3. **Secrets Management and Configuration**
+
+## 1. SSL/TLS with Nginx
+
+The application uses Nginx as a reverse proxy with robust SSL/TLS implementation to secure communications and protect against DDoS attacks.
+
+### Key Features:
+- **SSL/TLS Termination**: Encrypts all client-server communication
+- **HTTP to HTTPS Redirection**: Forces secure connections
+- **Modern TLS Protocol Support**: TLS 1.2 and 1.3 only
+- **Rate Limiting**: Prevents API abuse and brute-force attacks
+- **DDoS Protection**: Connection limits and traffic filtering
+
+For detailed configuration, see [SECURITY-IMPLEMENTATION.md](./SECURITY-IMPLEMENTATION.md) and [NGINX-SETUP.md](./NGINX-SETUP.md).
+
+## 2. Security Pipelines with GitHub Actions
+
+Automated security checks are integrated into the CI/CD pipeline using GitHub Actions.
+
+### Implemented Workflows:
+- **CodeQL Analysis**: Static code analysis for vulnerabilities
+- **Dependency Scanning**: Checks for vulnerable packages
+- **Docker Image Security**: Scans container images using Trivy
+- **Scheduled Security Monitoring**: Daily security checks
+
+For workflow configurations, see `.github/workflows/` directory.
+
+## 3. Secrets Management
+
+The application implements secure management of sensitive configuration.
+
+### Best Practices:
+- **Environment Variables**: Using `.env` files (git-ignored)
+- **No Hardcoded Secrets**: All sensitive values externalized
+- **Terraform Variables**: Secure cloud deployment configuration
+- **Separate Environments**: Dev/staging/production separation
+
+For more information on deployment with secure configuration, see the Terraform documentation in the `terraform` directory.

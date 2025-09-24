@@ -1,0 +1,7 @@
+docker-compose exec backend npx prisma generate
+if backend is running on local machine not on a docker container->host.docker.internal:5000
+
+
+* SSL connection using TLSv1.3 / AEAD-AES256-GCM-SHA384
+
+to check connection is really secured using https - curl -v -k https://localhost/api/health

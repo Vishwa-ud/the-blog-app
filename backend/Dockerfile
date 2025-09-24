@@ -1,30 +1,26 @@
-# syntax=docker/dockerfile:1
-
-# Build stage
-FROM node:18-slim AS build
+FROM node:18-slim AS builder
 WORKDIR /app
 
-# Install deps
-COPY package.json package-lock.json* ./
-RUN npm install
+# Install OpenSSL for Prisma
+RUN apt-get update -y && apt-get install -y openssl
 
-# Copy source and build
-COPY tsconfig.json ./
-COPY src ./src/
-COPY prisma ./prisma/
-RUN npx prisma generate
-RUN npx tsc
+COPY package*.json ./
+# Add npm config for better network handling
+RUN npm config set registry https://registry.npmjs.org/ \
+    && npm config set fetch-retry-maxtimeout 60000 \
+    && npm ci --loglevel=error
 
-# Final image
+# Copy source files and generate Prisma client in builder stage
+COPY . .
+
 FROM node:18-slim
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
-RUN npm install --only=production
+# Install OpenSSL and curl for Prisma and health checks
+RUN apt-get update -y && apt-get install -y openssl curl
 
-# Copy build output + prisma client
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules /app/node_modules
+COPY --from=builder /app .
 
-EXPOSE 3000
-CMD ["npm", "run", "start"]
+EXPOSE 5000
+CMD ["npm", "run", "server"]

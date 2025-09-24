@@ -40,4 +40,14 @@ export default defineConfig({
             },
         }),
     ],
+    server: {
+        host: '0.0.0.0',
+        port: 5173,
+        strictPort: true,
+        https: false,  // Use HTTP internally, nginx handles HTTPS termination
+        watch: {
+            usePolling: false,
+            ignored: ['**/*']  // Ignore all file changes in Docker
+        },
+    },
 });

@@ -1,68 +1,82 @@
 import express from "express";
+import https from "https";
+import fs from "fs";
+import path from "path";
 import dotenv from "dotenv";
 dotenv.config({ path: "../.env" });
 import cors, {CorsOptions} from "cors";
 import cookieParser from "cookie-parser";
+import helmet from "helmet";
 import usersRoutes from "./routes/users";
 import postsRoutes from "./routes/posts";
 import authRoutes from "./routes/auth";
 import likesRoutes from "./routes/likes";
 import commentsRoutes from "./routes/comments";
-import path from "path";
 import { errorMiddleware } from "./middleware/errorMiddleware";
 import { v2 as cloudinary } from "cloudinary";
-import helmet from "helmet";
+
 import { sanitizeMiddleware } from "./middleware/sanitizeMiddleware";
 import rateLimit from "express-rate-limit";
+import { 
+    generalRateLimit, 
+    authRateLimit, 
+    uploadRateLimit,
+    readPostsRateLimit 
+} from "./middleware/rateLimitMiddleware";
+import { 
+    speedLimiter, 
+    ddosProtection, 
+    requestSizeLimit 
+} from "./middleware/ddosProtectionMiddleware";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT || "5000");
+const HTTPS_PORT = parseInt(process.env.HTTPS_PORT || "5443");
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Security middleware - Apply helmet first
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:"],
+        },
+    },
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    }
+}));
+
+// DDoS protection middleware
+app.use(ddosProtection);
+app.use(requestSizeLimit);
+app.use(speedLimiter);
+
+// Basic middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-//Use helmet for make Security Policies(A05)
-app.use(
-    helmet({
-        contentSecurityPolicy: {
-            directives: {
-                defaultSrc: ["'self'"],
-                scriptSrc: ["'self'"], 
-                styleSrc: ["'self'", "https://fonts.googleapis.com"],
-                imgSrc: ["'self'", "data:"],
-                fontSrc: ["'self'", "https://fonts.gstatic.com"],
-            }
-        },
-        referrerPolicy: { policy: "no-referrer-when-downgrade" },
-        frameguard: { action: "deny" },
-        hsts: { maxAge: 60 * 60 * 24 * 30, includeSubDomains: true },
-    })
-)
-
-//Disable X-Powered-By headers(A05)
-app.disable("x-powered-by");
-
-//Use sanitize frontend inputs to prevent XSS
-app.use(sanitizeMiddleware);
-
-//CORS - Stricter AllowList(A05)
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:4173",
-  process.env.FRONTEND_SERVER_PROD || "",
-];
-const corsOptions: CorsOptions = {
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS not allowed"));
-    }
-  },
-  credentials: true,
+const corsOptions = {
+    origin: [
+        "http://localhost:5173",  // Frontend direct access
+        "http://localhost:4173",  // Frontend preview
+        "https://localhost",      // Nginx HTTPS proxy
+        "https://localhost:443",  // Explicit HTTPS port
+        process.env.FRONTEND_SERVER_PROD || "",
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
 };
 app.use(cors(corsOptions));
+
+// If running behind a reverse proxy (Nginx) and you plan to use secure cookies,
+// trust the proxy so Express can correctly detect HTTPS
+app.set("trust proxy", 1);
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -71,13 +85,58 @@ cloudinary.config({
 });
 
 app.use("/uploads/", express.static(path.join(process.cwd(), "/uploads/")));
-app.use("/posts", postsRoutes);
+
+// Apply general rate limiting to all routes (generous limits)
+app.use(generalRateLimit);
+
+// Health check endpoint with no additional rate limiting (handled by nginx)
+app.get("/health", (req, res) => {
+    res.status(200).json({ 
+        status: "healthy backend ekak bn", 
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || "development"
+    });
+});
+
+// Routes with specific rate limiting based on HTTP method
+app.use("/posts", (req, res, next) => {
+    // Apply upload rate limit for creating/updating posts
+    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+        return uploadRateLimit(req, res, next);
+    }
+    // Apply read rate limit for reading posts
+    return readPostsRateLimit(req, res, next);
+}, postsRoutes);
+
 app.use("/posts", likesRoutes);
 app.use("/users", usersRoutes);
-app.use("/auth", authRoutes);
+app.use("/auth", authRateLimit, authRoutes);
 app.use("/comments", commentsRoutes);
 app.use(errorMiddleware);
 
-app.listen({ address: "0.0.0.0", port: PORT }, () => {
-    console.log(`Server running on port: ${PORT}`);
+// HTTPS Configuration with error handling
+const sslKeyPath = path.join(__dirname, '../ssl/backend.key');
+const sslCertPath = path.join(__dirname, '../ssl/backend.crt');
+
+// Check if SSL certificates exist
+if (fs.existsSync(sslKeyPath) && fs.existsSync(sslCertPath)) {
+    const httpsOptions = {
+        key: fs.readFileSync(sslKeyPath),
+        cert: fs.readFileSync(sslCertPath)
+    };
+
+    // Start HTTPS server
+    const httpsServer = https.createServer(httpsOptions, app);
+    
+    httpsServer.listen(HTTPS_PORT, '0.0.0.0', () => {
+        console.log(`🔒 Backend HTTPS server running on port ${HTTPS_PORT}`);
+    });
+} else {
+    console.log(`⚠️  SSL certificates not found. HTTPS server not started.`);
+    console.log(`   Expected: ${sslKeyPath} and ${sslCertPath}`);
+}
+
+// Start HTTP server
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🌐 Backend HTTP server running on port ${PORT}`);
 });
